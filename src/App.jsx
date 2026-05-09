@@ -1,11 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import ProductListing from './pages/ProductListing';
-import ProductDetail from './pages/ProductDetail';
-import Cart from './pages/Cart';
-import Auth from './pages/Auth';
+
+// FOLDER NAMES-AI CAPITAL 'P' KU MATHI IRUKKAEN
+import Home from './Pages/Home';
+import ProductListing from './Pages/ProductListing';
+import ProductDetail from './Pages/ProductDetail';
+import Cart from './Pages/Cart';
+import Auth from './Pages/Auth';
+
 import Footer from './components/Footer';
 
 function App() {
@@ -13,10 +16,10 @@ function App() {
     <CartProvider>
       <Router>
         <div className="min-h-screen bg-white selection:bg-tnGreen selection:text-white flex flex-col">
-          {/* Navbar fixed-ah irukkuradhala, adhu mela dhaan irukkum */}
+        
           <Navbar />
 
-          {/* MAIN CONTENT AREA - Inga thaan padding top (pt-24) add panni irukkaen */}
+        
           <main className="flex-grow pt-20 md:pt-28">
             <Routes>
               <Route path="/" element={<Home />} />
