@@ -8,6 +8,7 @@ import ProductListing from './Pages/ProductListing';
 import ProductDetail from './Pages/ProductDetail';
 import Cart from './Pages/Cart';
 import Auth from './Pages/Auth';
+import Contact from './Pages/Contact';
 
 import Footer from './components/Footer';
 
@@ -27,6 +28,7 @@ function App() {
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/contact" element={<Contact />} />
             </Routes>
           </main>
 
