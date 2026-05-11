@@ -9,7 +9,7 @@ import ProductDetail from './Pages/ProductDetail';
 import Cart from './Pages/Cart';
 import Auth from './Pages/Auth';
 import Contact from './Pages/Contact';
-
+import Profile from './Pages/Profile';
 import Footer from './components/Footer';
 
 function App() {
@@ -29,6 +29,7 @@ function App() {
               <Route path="/cart" element={<Cart />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/profile" element={<Profile />} />
             </Routes>
           </main>
 
