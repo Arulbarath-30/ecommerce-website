@@ -1,18 +1,42 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   
-  // --- NEW AUTH STATES ---
+  // --- 1. GLOBAL THEME ENGINE (Controlled from Navbar to sync entire website) ---
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem("terabyte_theme") === "dark";
+  });
+
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      const nextTheme = !prev;
+      localStorage.setItem("terabyte_theme", nextTheme ? "dark" : "light");
+      return nextTheme;
+    });
+  };
+
+  // Sync entire DOM elements instantaneously
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.body.style.backgroundColor = '#121212';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.style.backgroundColor = '#F9F6F0';
+    }
+  }, [isDarkMode]);
+
+  // --- 2. AUTH STATES (Updated Default Identity to Arul) ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null); // User details store panna
+  const [user, setUser] = useState(null); 
 
   // Auth Functions
   const login = (userData) => {
     setIsLoggedIn(true);
-    setUser(userData || { name: 'Praveen' }); // Dummy user data
+    setUser(userData || { name: 'Arul' }); // Set default authorized architect identity
   };
 
   const logout = () => {
@@ -20,15 +44,21 @@ export const CartProvider = ({ children }) => {
     setUser(null);
   };
 
+  // --- 3. SKUs QUANTITY PUSH LOGIC (STRICT AGGREGATION) ---
   const addToCart = (product) => {
     setCart((prev) => {
       const isItemInCart = prev.find((item) => item.id === product.id);
+      // Capture customized incoming unit payload or default strictly to 1
+      const incomingQty = product.quantity || 1;
+
       if (isItemInCart) {
         return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === product.id 
+            ? { ...item, quantity: item.quantity + incomingQty } 
+            : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity: incomingQty }];
     });
   };
 
@@ -61,7 +91,10 @@ export const CartProvider = ({ children }) => {
         isLoggedIn,
         user,
         login,
-        logout
+        logout,
+        // Universal Theme exports
+        isDarkMode,
+        toggleTheme
       }}
     >
       {children}

@@ -4,7 +4,8 @@ import { useCart } from '../context/CartContext';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const { login } = useCart();
+  // GLOBALIZED PULL: Fetching native authentication controls and real-time absolute theme metrics
+  const { login, isDarkMode } = useCart();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -18,8 +19,23 @@ const Auth = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  const playPremiumBeep = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (err) {}
+  };
+
   // --- 1. VISUAL AUTO-CORRECTION ---
-  // User type pannum bodhey email field-ai force panni lowercase mathidrom
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ 
@@ -30,6 +46,7 @@ const Auth = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    playPremiumBeep();
 
     if (!formData.email || !formData.password) {
       alert("Please enter your email and password to continue.");
@@ -83,8 +100,6 @@ const Auth = () => {
 
       const registeredUser = JSON.parse(storedUserData);
 
-      // CRITICAL FIX: Stored email-aiyum naama lowercase mathi thaan compare pandrom.
-      // Idhu unga browser-la pazhaya caps data irundhalum crash aagama pathukkum!
       const storedEmailNormalized = (registeredUser.email || "").toLowerCase().trim();
 
       if (normalizedEmail !== storedEmailNormalized || formData.password !== registeredUser.password) {
@@ -100,11 +115,11 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center bg-[#F9F6F0] py-20 px-6 selection:bg-[#D4AF37] selection:text-white">
+    <div className={`min-h-[80vh] flex flex-col items-center justify-center py-20 px-6 selection:bg-[#D4AF37] selection:text-white transition-colors duration-500 ${isDarkMode ? 'bg-[#121212]' : 'bg-[#F9F6F0]'}`}>
       <div className="w-full max-w-md animate-slideUp">
         
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-black italic tracking-tighter uppercase text-black">
+          <h1 className={`text-4xl font-black italic tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-black'}`}>
             {isLogin ? 'Welcome Back' : 'Join Terabyte'}
           </h1>
           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#D4AF37] mt-2">
@@ -112,8 +127,8 @@ const Auth = () => {
           </p>
         </div>
 
-        <div className="bg-white border border-gray-100 p-8 md:p-10 rounded-[30px] md:rounded-[40px] shadow-sm">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div className={`border p-8 md:p-10 rounded-[30px] md:rounded-[40px] shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-[#1A1A1A] border-white/10' : 'bg-white border-gray-100'}`}>
+          <form onSubmit={handleSubmit} className="space-y-4 text-left">
             
             {!isLogin && (
               <div className="space-y-1 animate-slideUp">
@@ -125,7 +140,7 @@ const Auth = () => {
                   placeholder="Arul" 
                   value={formData.name} 
                   onChange={handleInputChange}
-                  className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-6 py-4 text-xs font-bold outline-none focus:border-black transition-all text-black uppercase tracking-widest"
+                  className={`w-full border rounded-2xl px-6 py-4 text-xs font-bold outline-none transition-all uppercase tracking-widest ${isDarkMode ? 'bg-black text-white border-white/10 focus:border-[#D4AF37]' : 'bg-gray-50/50 text-black border-gray-100 focus:border-black'}`}
                 />
               </div>
             )}
@@ -139,7 +154,7 @@ const Auth = () => {
                 placeholder="name@example.com" 
                 value={formData.email} 
                 onChange={handleInputChange}
-                className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-6 py-4 text-xs font-bold outline-none focus:border-black transition-all text-black"
+                className={`w-full border rounded-2xl px-6 py-4 text-xs font-bold outline-none transition-all ${isDarkMode ? 'bg-black text-white border-white/10 focus:border-[#D4AF37]' : 'bg-gray-50/50 text-black border-gray-100 focus:border-black'}`}
               />
             </div>
 
@@ -152,7 +167,7 @@ const Auth = () => {
                 placeholder="••••••••" 
                 value={formData.password} 
                 onChange={handleInputChange}
-                className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-6 py-4 text-xs font-bold outline-none focus:border-black transition-all text-black"
+                className={`w-full border rounded-2xl px-6 py-4 text-xs font-bold outline-none transition-all ${isDarkMode ? 'bg-black text-white border-white/10 focus:border-[#D4AF37]' : 'bg-gray-50/50 text-black border-gray-100 focus:border-black'}`}
               />
             </div>
 
@@ -166,27 +181,28 @@ const Auth = () => {
                   placeholder="••••••••" 
                   value={formData.confirmPassword} 
                   onChange={handleInputChange}
-                  className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-6 py-4 text-xs font-bold outline-none focus:border-black transition-all text-black"
+                  className={`w-full border rounded-2xl px-6 py-4 text-xs font-bold outline-none transition-all ${isDarkMode ? 'bg-black text-white border-white/10 focus:border-[#D4AF37]' : 'bg-gray-50/50 text-black border-gray-100 focus:border-black'}`}
                 />
               </div>
             )}
 
             <button 
               type="submit" 
-              className="w-full bg-[#1A1A1A] text-white py-5 rounded-full text-[10px] font-black uppercase tracking-widest mt-6 hover:bg-[#D4AF37] hover:text-black transition-all active:scale-95 shadow-md"
+              className={`w-full py-5 rounded-full text-[10px] font-black uppercase tracking-widest mt-6 transition-all active:scale-95 shadow-md cursor-pointer font-black ${isDarkMode ? 'bg-[#D4AF37] text-black hover:bg-white' : 'bg-[#1A1A1A] text-white hover:bg-[#D4AF37] hover:text-black'}`}
             >
               {isLogin ? 'Sign In' : 'Create Account'}
             </button>
           </form>
 
-          <div className="mt-8 text-center pt-6 border-t border-gray-100">
+          <div className={`mt-8 text-center pt-6 border-t ${isDarkMode ? 'border-white/10' : 'border-gray-100'}`}>
             <button 
               type="button"
               onClick={() => {
+                playPremiumBeep();
                 setIsLogin(!isLogin);
                 setFormData({ name: '', email: '', password: '', confirmPassword: '' });
               }} 
-              className="text-[9px] font-black uppercase text-gray-500 hover:text-black transition-colors underline underline-offset-8"
+              className="text-[9px] font-black uppercase text-gray-500 hover:text-[#D4AF37] transition-colors underline underline-offset-8 cursor-pointer"
             >
               {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
             </button>

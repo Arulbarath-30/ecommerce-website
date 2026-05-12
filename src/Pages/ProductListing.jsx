@@ -16,7 +16,8 @@ export const products = [
 ];
 
 const ProductListing = () => {
-  const { addToCart, cart } = useCart();
+  // GLOBALIZED PULL: Fetching shared theme logic direct from central engine
+  const { addToCart, cart, isDarkMode } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("default");
@@ -25,8 +26,24 @@ const ProductListing = () => {
   const [lastAdded, setLastAdded] = useState("");
   const [addedStatus, setAddedStatus] = useState({});
 
+  // Track global menu overlapping state cross-tree
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Sync scroll positioning and cross-tree menu overlays
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // Listen to native event emitted when mobile menu is toggled in Navbar
+    const handleMenuState = (e) => {
+      if (e.detail !== undefined) {
+        setIsMenuOpen(e.detail.isOpen);
+      }
+    };
+
+    window.addEventListener("terabyte_nav_toggle", handleMenuState);
+    return () => {
+      window.removeEventListener("terabyte_nav_toggle", handleMenuState);
+    };
   }, []);
 
   const playPremiumBeep = () => {
@@ -49,7 +66,10 @@ const ProductListing = () => {
     e.preventDefault();
     e.stopPropagation();
     playPremiumBeep();
-    addToCart(product);
+    
+    // Explicit single default base multiplier payload directly dispatched
+    addToCart({ ...product, quantity: 1 });
+    
     setLastAdded(product.name);
     setShowPopup(true);
     setAddedStatus(prev => ({ ...prev, [product.id]: true }));
@@ -59,7 +79,10 @@ const ProductListing = () => {
     setTimeout(() => setShowPopup(false), 3500);
   };
 
-  let processedProducts = products.filter(p => 
+  // OMITTING "Work" items completely from the UI output array stream
+  const listingDisplayProducts = products.filter(p => p.category !== "Work");
+
+  let processedProducts = listingDisplayProducts.filter(p => 
     (activeCategory === "All" || p.category === activeCategory) && 
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -71,7 +94,7 @@ const ProductListing = () => {
   }
 
   return (
-    <div className="bg-[#F9F6F0] min-h-screen text-[#1A1A1A] font-sans antialiased selection:bg-[#D4AF37] selection:text-white pb-32">
+    <div className={`min-h-screen font-sans antialiased selection:bg-[#D4AF37] selection:text-white pb-32 transition-colors duration-500 ${isDarkMode ? 'bg-[#121212] text-[#F9F6F0]' : 'bg-[#F9F6F0] text-[#1A1A1A]'}`}>
       
       {/* --- RESPONSIVE TOAST NOTIFICATION --- */}
       {showPopup && (
@@ -89,7 +112,7 @@ const ProductListing = () => {
                 <p className="text-xs md:text-sm font-black uppercase tracking-tight truncate max-w-[140px] md:max-w-[220px]">{lastAdded}</p>
              </div>
           </div>
-          <Link to="/cart" className="bg-white text-black px-5 py-2.5 rounded-full text-[9px] font-black tracking-widest uppercase hover:bg-[#D4AF37] transition-all whitespace-nowrap shadow-sm">
+          <Link to="/cart" className="bg-white text-black px-5 py-2.5 rounded-full text-[9px] font-black tracking-widest uppercase hover:bg-[#D4AF37] transition-all whitespace-nowrap shadow-sm font-black">
             View Bag →
           </Link>
         </div>
@@ -111,7 +134,7 @@ const ProductListing = () => {
           <div className="flex gap-6 border-t border-white/10 md:border-t-0 pt-6 md:pt-0 w-full md:w-auto justify-start md:justify-end">
             <div className="border-l border-white/10 pl-4 text-left">
                <p className="text-[8px] font-black tracking-[0.3em] uppercase text-[#D4AF37]">Inventory Status</p>
-               <p className="text-xl font-black uppercase tracking-tight">{products.length} Nodes</p>
+               <p className="text-xl font-black uppercase tracking-tight">{listingDisplayProducts.length} Nodes</p>
             </div>
             <div className="border-l border-white/10 pl-4 text-left">
                <p className="text-[8px] font-black tracking-[0.3em] uppercase text-[#D4AF37]">Security</p>
@@ -122,18 +145,23 @@ const ProductListing = () => {
         <div className="absolute top-0 right-10 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-[#D4AF37]/5 blur-[120px] rounded-full pointer-events-none"></div>
       </header>
 
-      {/* --- ADVANCED STICKY SEARCH & CONTROL DASHBOARD --- */}
-      <section className="sticky top-4 z-[2000] max-w-7xl mx-auto px-4 md:px-6 my-8" aria-label="Catalog Filtering Controls">
-        <div className="bg-white/85 backdrop-blur-2xl border border-gray-100 rounded-[25px] md:rounded-[40px] shadow-[0_15px_40px_rgba(0,0,0,0.08)] p-3 md:p-4 flex flex-col lg:flex-row justify-between items-center gap-4">
+      {/* --- ADVANCED STICKY SEARCH & CONTROL DASHBOARD (STRIPPED WORK CATEGORY + OVERLAP FIX) --- */}
+      <section className={`sticky top-4 z-[2000] max-w-7xl mx-auto px-4 md:px-6 my-8 transition-all duration-500 ${
+        isMenuOpen ? 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto' : 'opacity-100 pointer-events-auto'
+      }`} aria-label="Catalog Filtering Controls">
+        <div className={`backdrop-blur-2xl border rounded-[25px] md:rounded-[40px] shadow-lg p-3 md:p-4 flex flex-col lg:flex-row justify-between items-center gap-4 transition-colors duration-500 ${isDarkMode ? 'bg-[#1A1A1A]/90 border-white/10' : 'bg-white/85 border-gray-100'}`}>
           
           <div className="flex gap-1 overflow-x-auto no-scrollbar w-full lg:w-auto px-2 py-1" role="group" aria-label="Filter by Product Category">
-            {["All", "Wearables", "Audio", "Mobile", "Vision", "Work"].map(c => (
+            {/* OMITTED "Work" strictly from the rendering tabs mapping */}
+            {["All", "Wearables", "Audio", "Mobile", "Vision", "Power"].map(c => (
               <button 
                 key={c} 
                 aria-pressed={activeCategory === c}
                 onClick={() => setActiveCategory(c)} 
                 className={`whitespace-nowrap px-5 py-2.5 md:px-7 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase transition-all ${
-                  activeCategory === c ? 'bg-[#1A1A1A] text-white shadow-md scale-105' : 'text-gray-600 hover:text-black hover:bg-gray-50'
+                  activeCategory === c 
+                    ? 'bg-[#D4AF37] text-black shadow-md scale-105 font-black' 
+                    : isDarkMode ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-black hover:bg-gray-50'
                 }`}
               >
                 {c}
@@ -141,7 +169,7 @@ const ProductListing = () => {
             ))}
           </div>
 
-          <div className="flex-1 w-full flex items-center px-4 lg:px-6 bg-gray-50/50 rounded-full border border-gray-100 py-1 focus-within:border-black transition-all">
+          <div className={`flex-1 w-full flex items-center px-4 lg:px-6 rounded-full border py-1 transition-all ${isDarkMode ? 'bg-black/50 border-white/10 focus-within:border-[#D4AF37]' : 'bg-gray-50/50 border-gray-100 focus-within:border-black'}`}>
              <span className="mr-3 opacity-30 text-xs" aria-hidden="true">🔍</span>
              <label htmlFor="search-artifacts" className="sr-only">Search complete catalogue</label>
              <input 
@@ -149,25 +177,25 @@ const ProductListing = () => {
                type="text" 
                value={searchQuery} 
                placeholder="SEARCH INVENTORY..." 
-               className="bg-transparent w-full text-[9px] md:text-[10px] font-black tracking-widest outline-none uppercase text-black placeholder:text-gray-500 py-2" 
+               className={`bg-transparent w-full text-[9px] md:text-[10px] font-black tracking-widest outline-none uppercase py-2 ${isDarkMode ? 'text-white placeholder:text-gray-600' : 'text-black placeholder:text-gray-500'}`} 
                onChange={(e) => setSearchQuery(e.target.value)} 
              />
              {searchQuery && (
-               <button onClick={() => setSearchQuery("")} aria-label="Clear active search" className="text-[10px] font-bold text-gray-500 hover:text-black px-2">✕</button>
+               <button onClick={() => setSearchQuery("")} aria-label="Clear active search" className="text-[10px] font-bold text-gray-500 hover:text-[#D4AF37] px-2">✕</button>
              )}
           </div>
 
-          <div className="w-full lg:w-auto flex items-center justify-between lg:justify-end gap-3 px-2 lg:border-l border-gray-100 pl-4">
+          <div className={`w-full lg:w-auto flex items-center justify-between lg:justify-end gap-3 px-2 lg:border-l pl-4 ${isDarkMode ? 'border-white/10' : 'border-gray-100'}`}>
              <label htmlFor="sort-dropdown" className="text-[8px] font-black tracking-widest text-gray-500 uppercase hidden sm:inline">Sort:</label>
              <select 
                id="sort-dropdown"
                value={sortBy} 
                onChange={(e) => setSortBy(e.target.value)}
-               className="bg-transparent text-[9px] font-black tracking-widest uppercase text-black outline-none cursor-pointer py-2 pr-4 border-none"
+               className={`bg-transparent text-[9px] font-black tracking-widest uppercase outline-none cursor-pointer py-2 pr-4 border-none ${isDarkMode ? 'text-white' : 'text-black'}`}
              >
-                <option value="default">Standard Order</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
+                <option value="default" className="text-black">Standard Order</option>
+                <option value="price-asc" className="text-black">Price: Low to High</option>
+                <option value="price-desc" className="text-black">Price: High to Low</option>
              </select>
           </div>
 
@@ -177,14 +205,14 @@ const ProductListing = () => {
       {/* --- INVENTORY GRID SHOWCASE --- */}
       <main className="max-w-7xl mx-auto px-6 pt-6 md:pt-12" aria-label="Product Catalogue Grid">
         {processedProducts.length === 0 ? (
-          <div className="py-32 text-center space-y-6 bg-white rounded-[40px] border border-gray-100 p-10 shadow-sm max-w-lg mx-auto mt-10">
+          <div className={`py-32 text-center space-y-6 rounded-[40px] border p-10 shadow-sm max-w-lg mx-auto mt-10 ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-white border-gray-100'}`}>
             <div className="text-5xl grayscale opacity-20" aria-hidden="true">🎛️</div>
             <p className="text-gray-500 text-xs font-black tracking-widest uppercase leading-relaxed" role="status">
               Zero results matching current telemetry parameters.
             </p>
             <button 
               onClick={() => { setSearchQuery(""); setActiveCategory("All"); setSortBy("default"); }} 
-              className="bg-black text-white px-8 py-4 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-[#D4AF37] hover:text-black transition-all shadow-md"
+              className="bg-[#D4AF37] text-black px-8 py-4 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-md font-black"
             >
               Reset All Telemetry
             </button>
@@ -194,10 +222,10 @@ const ProductListing = () => {
             {processedProducts.map(p => (
               <div key={p.id} className="group relative flex flex-col animate-slideUp">
                 
-                <div className="relative aspect-[4/5] w-full bg-white rounded-[40px] md:rounded-[50px] overflow-hidden shadow-sm border border-gray-50 transition-all duration-500 hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] hover:-translate-y-2 flex flex-col justify-between">
+                <div className={`relative aspect-[4/5] w-full rounded-[40px] md:rounded-[50px] overflow-hidden shadow-sm border transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 flex flex-col justify-between ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-white border-gray-50'}`}>
                   
                   <div className="absolute top-6 right-6 md:top-8 md:right-8 z-20 flex items-center gap-2">
-                      <span className="bg-[#1A1A1A] text-[#D4AF37] px-4 py-2 rounded-full text-[7px] md:text-[8px] font-black tracking-widest uppercase shadow-md">{p.tag}</span>
+                      <span className="bg-black text-[#D4AF37] px-4 py-2 rounded-full text-[7px] md:text-[8px] font-black tracking-widest uppercase shadow-md">{p.tag}</span>
                   </div>
 
                   <Link to={`/product/${p.id}`} aria-label={`View full details of ${p.name}`} className="w-full h-full p-12 md:p-16 flex items-center justify-center my-auto">
@@ -213,10 +241,10 @@ const ProductListing = () => {
                       onClick={(e) => handleAddToCart(e, p)} 
                       disabled={addedStatus[p.id]} 
                       aria-label={`Add ${p.name} to custom order bag`}
-                      className={`w-full py-4 rounded-full text-[9px] font-black tracking-widest uppercase transition-all duration-300 shadow-lg ${
+                      className={`w-full py-4 rounded-full text-[9px] font-black tracking-widest uppercase transition-all duration-300 shadow-lg cursor-pointer ${
                         addedStatus[p.id] 
-                          ? 'bg-green-500 text-white scale-100' 
-                          : 'bg-[#1A1A1A] text-white hover:bg-[#D4AF37] hover:text-black active:scale-95'
+                          ? 'bg-green-500 text-white scale-100 font-black' 
+                          : 'bg-[#D4AF37] text-black hover:bg-white active:scale-95 font-black'
                       }`}
                      >
                       {addedStatus[p.id] ? '✓ Secured In Bag' : 'Add To Bag +'}
@@ -227,7 +255,7 @@ const ProductListing = () => {
 
                 <div className="mt-6 px-2 text-left space-y-1 md:space-y-2">
                    <p className="text-[8px] font-black text-gray-500 tracking-[0.3em] uppercase">{p.spec}</p>
-                   <h2 className="text-xl md:text-2xl font-black tracking-tighter uppercase truncate text-black">{p.name}</h2>
+                   <h2 className={`text-xl md:text-2xl font-black tracking-tighter uppercase truncate ${isDarkMode ? 'text-white' : 'text-black'}`}>{p.name}</h2>
                    <p className="text-lg md:text-xl font-black text-[#D4AF37]">
                      ₹{p.price.toLocaleString('en-IN')}
                    </p>
@@ -241,13 +269,13 @@ const ProductListing = () => {
 
       {/* --- RETAIL DISPATCH BANNER --- */}
       <section className="max-w-7xl mx-auto px-6 mt-32" aria-labelledby="custom-build-heading">
-        <div className="bg-white rounded-[30px] md:rounded-[50px] p-10 md:p-16 border border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-8 text-left shadow-sm">
+        <div className={`rounded-[30px] md:rounded-[50px] p-10 md:p-16 border flex flex-col sm:flex-row justify-between items-center gap-8 text-left shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-white border-gray-100'}`}>
            <div className="space-y-2 max-w-md">
               <p className="text-[8px] font-black tracking-[0.4em] text-[#D4AF37] uppercase">Priority Air Dispatch</p>
-              <h2 id="custom-build-heading" className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter text-black">Need custom build integrations?</h2>
+              <h2 id="custom-build-heading" className={`text-2xl md:text-3xl font-black uppercase italic tracking-tighter ${isDarkMode ? 'text-white' : 'text-black'}`}>Need custom build integrations?</h2>
            </div>
-           <Link to="/contact" className="bg-[#1A1A1A] text-white px-8 py-5 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-[#D4AF37] hover:text-black transition-all whitespace-nowrap shadow-md">
-             Contact Node Hub
+           <Link to="/contact" className="bg-[#D4AF37] text-black px-8 py-5 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-white transition-all whitespace-nowrap shadow-md font-black">
+              Contact Node Hub
            </Link>
         </div>
       </section>

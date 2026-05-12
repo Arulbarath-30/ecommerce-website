@@ -1,31 +1,40 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-// --- DATA LAYER (Unchanged as requested) ---
+// --- DATA LAYER (Original definitive baseline layout synced to eliminate routing loops) ---
 export const products = [
-  { id: 1, name: "Terabyte Watch Ultra", price: 65999, category: "Wearables", img: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500", tag: "Limited", spec: "Grade-5 Titanium Build" },
-  { id: 2, name: "Terabyte Studio Pro", price: 28900, category: "Audio", img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000", tag: "Best Seller", spec: "Lossless Audio 2.0" },
-  { id: 3, name: "Terabyte Phone 15 Pro", price: 144900, category: "Mobile", img: "https://images.unsplash.com/photo-1616348436168-de43ad0db179?q=80&w=1000", tag: "New", spec: "A17 Pro Silicon" },
-  { id: 4, name: "Terabyte Vision Glass", price: 299000, category: "Vision", img: "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?q=80&w=1000", tag: "Elite", spec: "Spatial Computing Ready" },
-  { id: 5, name: "Terabyte Aero Pods", price: 49900, category: "Audio", img: "https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?q=80&w=1000", tag: "Trending", spec: "Active Noise Cancellation" },
-  { id: 6, name: "Terabyte MagSafe Hub", price: 14900, category: "Power", img: "https://images.unsplash.com/photo-1615526675159-e248c3021d3f?q=80&w=1000", tag: "Essential", spec: "15W Fast Wireless" },
-  { id: 7, name: "Terabyte Keyboard Pro", price: 12900, category: "Work", img: "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?q=80&w=1000", tag: "Mechanical", spec: "Silver Switches" },
-  { id: 8, name: "Terabyte Mouse Pad", price: 4500, category: "Work", img: "https://images.unsplash.com/photo-1629429408209-1f912961dbd8?q=80&w=1000", tag: "Minimal", spec: "Waterproof Micro-texture" },
-  { id: 9, name: "Terabyte Laptop Stand", price: 8900, category: "Work", img: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=1000", tag: "Ergonomic", spec: "Brushed Aluminum" }
+  { id: 1, name: "Terabyte Watch Ultra", price: 65999, category: "Wearables", img: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&q=60&w=500", tag: "Limited", spec: "Grade-5 Titanium Build" },
+  { id: 2, name: "Terabyte Studio Pro", price: 28900, category: "Audio", img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=60&w=1000", tag: "Best Seller", spec: "Lossless Audio 2.0 headphone" },
+  { id: 3, name: "Terabyte Phone 15 Pro", price: 144900, category: "Mobile", img: "https://images.unsplash.com/photo-1616348436168-de43ad0db179?auto=format&fit=crop&q=60&w=1000", tag: "New", spec: "A17 Pro Silicon smartphone" },
+  { id: 4, name: "Terabyte Vision Glass", price: 299000, category: "Vision", img: "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?auto=format&fit=crop&q=60&w=1000", tag: "Elite", spec: "Spatial Computing Ready ar vr" },
+  { id: 5, name: "Terabyte Aero Pods", price: 49900, category: "Audio", img: "https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?auto=format&fit=crop&q=60&w=1000", tag: "Trending", spec: "Active Noise Cancellation earbuds earphones" },
+  { id: 6, name: "Terabyte MagSafe Hub", price: 14900, category: "Power", img: "https://images.unsplash.com/photo-1615526675159-e248c3021d3f?auto=format&fit=crop&q=60&w=1000", tag: "Essential", spec: "15W Fast Wireless charger" },
+  { id: 7, name: "Terabyte Keyboard Pro", price: 12900, category: "Work", img: "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&q=60&w=1000", tag: "Mechanical", spec: "Silver Switches custom keyboard" },
+  { id: 8, name: "Terabyte Mouse Pad", price: 4500, category: "Work", img: "https://images.unsplash.com/photo-1629429408209-1f912961dbd8?auto=format&fit=crop&q=60&w=1000", tag: "Minimal", spec: "Waterproof Micro-texture desk mat" },
+  { id: 9, name: "Terabyte Laptop Stand", price: 8900, category: "Work", img: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=60&w=1000", tag: "Ergonomic", spec: "Brushed Aluminum riser" }
 ];
 
 const Home = () => {
-  const { addToCart, cart } = useCart();
+  // GLOBALIZED PULL: Fetching native shared active theme triggers directly from unified state aggregator
+  const { addToCart, cart, isDarkMode, toggleTheme } = useCart();
+  const navigate = useNavigate();
+  
   const [showPopup, setShowPopup] = useState(false);
   const [lastAdded, setLastAdded] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [sortBy, setSortBy] = useState("default");
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
   
+  const [quantities, setQuantities] = useState({});
   const [addedStatus, setAddedStatus] = useState({});
   const catalogueRef = useRef(null);
+
+  // Track global header resize / menu overlaps
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const slides = [
     { title: "TERABYTE ELITE", sub: "THE FUTURE OF TECHNOLOGY", img: "https://plus.unsplash.com/premium_photo-1712764121254-d9867c694b81?w=1200" },
@@ -49,27 +58,59 @@ const Home = () => {
     } catch (err) {}
   };
 
+  // Sync menu overlay constraints cross-tree
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 80);
+    
+    const handleMenuState = (e) => {
+      if (e.detail !== undefined) {
+        setIsMenuOpen(e.detail.isOpen);
+      }
+    };
+
     window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("terabyte_nav_toggle", handleMenuState);
+    
     const sliderTimer = setInterval(() => setCurrentSlide(p => (p + 1) % slides.length), 5500);
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("terabyte_nav_toggle", handleMenuState);
       clearInterval(sliderTimer);
     };
   }, [slides.length]);
+
+  const handleToggleTheme = () => {
+    playPremiumBeep();
+    toggleTheme();
+  };
+
+  const handleQuantityChange = (id, delta) => {
+    playPremiumBeep();
+    setQuantities(prev => {
+      const current = prev[id] || 1;
+      const next = Math.max(1, current + delta);
+      return { ...prev, [id]: next };
+    });
+  };
 
   const handleAddToCart = (e, product) => {
     e.preventDefault(); 
     e.stopPropagation();
     playPremiumBeep();
-    addToCart(product);
-    setLastAdded(product.name);
+    
+    const qtyToPush = quantities[product.id] || 1;
+
+    addToCart({ ...product, quantity: qtyToPush });
+    
+    setLastAdded(`${product.name} (x${qtyToPush})`);
     setShowPopup(true);
     setAddedStatus(prev => ({ ...prev, [product.id]: true }));
+    
     setTimeout(() => {
       setAddedStatus(prev => ({ ...prev, [product.id]: false }));
+      setQuantities(prev => ({ ...prev, [product.id]: 1 }));
     }, 2500);
+
     setTimeout(() => setShowPopup(false), 3500);
   };
 
@@ -82,15 +123,52 @@ const Home = () => {
     }
   };
 
-  const filtered = products.filter(p => 
-    (activeCategory === "All" || p.category === activeCategory) && 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleNewsletterSubmit = (e) => {
+    e.preventDefault();
+    if (newsletterEmail.trim()) {
+      playPremiumBeep();
+      alert(`🎉 Network Joined! Updates will be sent to ${newsletterEmail.toLowerCase()}`);
+      setNewsletterEmail("");
+    }
+  };
+
+  // OMITTING "Work" items exclusively from the Home Page display stream
+  const homeDisplayProducts = products.filter(p => p.category !== "Work");
+
+  let processedProducts = homeDisplayProducts.filter(p => {
+    const matchCategory = activeCategory === "All" || p.category === activeCategory;
+    const query = searchQuery.toLowerCase().trim();
+    
+    if (!query) return matchCategory;
+
+    const matchName = p.name.toLowerCase().includes(query);
+    const matchSpec = p.spec.toLowerCase().includes(query);
+    const matchCatText = p.category.toLowerCase().includes(query);
+
+    return matchCategory && (matchName || matchSpec || matchCatText);
+  });
+
+  // Native dynamic sorting logic embedded directly onto Landing dashboard view
+  if (sortBy === "price-asc") {
+    processedProducts.sort((a, b) => a.price - b.price);
+  } else if (sortBy === "price-desc") {
+    processedProducts.sort((a, b) => b.price - a.price);
+  }
 
   return (
-    <div className="bg-[#F9F6F0] min-h-screen text-[#1A1A1A] font-sans antialiased overflow-x-hidden selection:bg-[#D4AF37] selection:text-white">
+    // CRITICAL FIX: Removed overflow-x-hidden to fully restore viewport sticky behavior tracking
+    <div className={`min-h-screen font-sans antialiased transition-colors duration-500 selection:bg-[#D4AF37] selection:text-white ${isDarkMode ? 'bg-[#121212] text-[#F9F6F0]' : 'bg-[#F9F6F0] text-[#1A1A1A]'}`}>
       
-      {/* 1. ADVANCED RESPONSIVE TOAST POPUP */}
+      {/* FLOATING THEME SWITCHER DIRECTED TO GLOBAL HANDLER */}
+      <button 
+        onClick={handleToggleTheme}
+        aria-label={`Switch to ${isDarkMode ? 'Light' : 'Dark'} mode`}
+        className="fixed bottom-24 md:bottom-10 right-4 md:right-10 z-[4000] bg-[#D4AF37] text-black w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-black shadow-2xl hover:scale-110 transition-transform active:scale-95 cursor-pointer border border-white/20"
+      >
+        {isDarkMode ? '☀️' : '🌙'}
+      </button>
+
+      {/* TOAST POPUP */}
       {showPopup && (
         <div 
           role="alert" 
@@ -106,13 +184,13 @@ const Home = () => {
                 <p className="text-xs md:text-sm font-black uppercase tracking-tight truncate max-w-[140px] md:max-w-[220px]">{lastAdded}</p>
              </div>
           </div>
-          <Link to="/cart" className="bg-white text-black px-5 py-2.5 rounded-full text-[9px] font-black tracking-widest uppercase hover:bg-[#D4AF37] transition-all whitespace-nowrap shadow-sm">
+          <Link to="/cart" className="bg-white text-black px-5 py-2.5 rounded-full text-[9px] font-black tracking-widest uppercase hover:bg-[#D4AF37] transition-all whitespace-nowrap shadow-sm font-black">
             Checkout →
           </Link>
         </div>
       )}
 
-      {/* 2. HERO SLIDER */}
+      {/* HERO SLIDER */}
       <section className="relative h-[80vh] md:h-screen bg-black overflow-hidden" aria-label="Featured Products Slider">
         {slides.map((slide, i) => (
           <div key={i} className={`absolute inset-0 transition-all duration-[1.5s] ease-in-out ${i === currentSlide ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-105 z-0'}`} aria-hidden={i !== currentSlide}>
@@ -124,8 +202,16 @@ const Home = () => {
                 {slide.title}<span className="text-[#D4AF37] not-italic">.</span>
               </h1>
               <div className="pt-10 md:pt-16 flex flex-col sm:flex-row gap-4 md:gap-6 w-full max-w-[280px] sm:max-w-none justify-center">
-                <button onClick={() => catalogueRef.current?.scrollIntoView({ behavior: 'smooth' })} className="bg-white text-black px-8 py-4 md:px-12 md:py-5 rounded-full text-[9px] md:text-[10px] font-black tracking-[0.3em] uppercase hover:bg-[#D4AF37] transition-all active:scale-95 shadow-xl">Shop Inventory</button>
-                <button className="border border-white/30 text-white px-8 py-4 md:px-12 md:py-5 rounded-full text-[9px] md:text-[10px] font-black tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-all">Watch Film</button>
+                <button onClick={() => catalogueRef.current?.scrollIntoView({ behavior: 'smooth' })} className="bg-white text-black px-8 py-4 md:px-12 md:py-5 rounded-full text-[9px] md:text-[10px] font-black tracking-[0.3em] uppercase hover:bg-[#D4AF37] transition-all active:scale-95 shadow-xl font-black">Shop Inventory</button>
+                <a 
+                  href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  onClick={playPremiumBeep}
+                  className="border border-white/30 text-white px-8 py-4 md:px-12 md:py-5 rounded-full text-[9px] md:text-[10px] font-black tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-all block text-center font-black"
+                >
+                  Watch Film ↗
+                </a>
               </div>
             </div>
           </div>
@@ -143,137 +229,181 @@ const Home = () => {
         </div>
       </section>
 
-      {/* 3. BRAND STATS */}
-      <section className="py-12 md:py-20 bg-white border-b border-gray-100 shadow-sm relative z-20" aria-label="Brand Core Values">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+      {/* BRAND STATS */}
+      <section className={`py-12 md:py-20 border-b shadow-sm relative z-20 transition-colors duration-500 ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-white border-gray-100'}`} aria-label="Brand Core Values">
+        <div className="max-w-7xl mx-auto px-6 md:px-10 grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 text-left md:text-center">
           {[{ l: "Engineering", v: "Terabyte Core" }, { l: "Delivery", v: "Priority Air" }, { l: "Warranty", v: "1 Year Shield" }, { l: "Support", v: "24/7 Concierge" }].map((item, i) => (
-            <div key={i} className="space-y-1 md:space-y-2 border-l-2 border-[#F9F6F0] pl-4 md:pl-8">
+            <div key={i} className={`space-y-1 md:space-y-2 border-l-2 pl-4 md:pl-8 ${isDarkMode ? 'border-white/10' : 'border-[#F9F6F0]'}`}>
               <p className="text-[8px] md:text-[9px] font-black text-[#D4AF37] uppercase tracking-[0.3em]">{item.l}</p>
-              <p className="text-sm md:text-xl font-black tracking-tight uppercase truncate text-[#1A1A1A]">{item.v}</p>
+              <p className={`text-sm md:text-xl font-black tracking-tight uppercase truncate ${isDarkMode ? 'text-white' : 'text-[#1A1A1A]'}`}>{item.v}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 4. ADVANCED STICKY NAV (Search & Sync Filters) */}
-      <nav className={`sticky top-4 z-[2000] px-4 md:px-6 my-4 transition-all duration-500 ${isScrolled ? 'translate-y-0 shadow-2xl' : 'translate-y-0'}`} aria-label="Product Filtering Navigation">
-        <div className="max-w-6xl mx-auto bg-white/85 backdrop-blur-2xl border border-gray-100 rounded-[25px] md:rounded-[40px] shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-2 md:p-3 flex flex-col lg:flex-row justify-between items-center gap-4 lg:gap-6">
+      {/* --- ADVANCED STICKY NAV (SORT SELECTOR KEPT + ABSOLUTELY STICKY) --- */}
+      <nav className={`sticky top-4 z-[2000] px-4 md:px-6 my-4 transition-all duration-500 ${
+        isScrolled ? 'translate-y-0 shadow-2xl' : 'translate-y-0'
+      } ${isMenuOpen ? 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto' : 'opacity-100 pointer-events-auto'}`} 
+      aria-label="Product Filtering Navigation">
+        <div className={`max-w-6xl mx-auto backdrop-blur-2xl border rounded-[25px] md:rounded-[40px] shadow-lg p-2 md:p-3 flex flex-col lg:flex-row justify-between items-center gap-4 lg:gap-6 transition-colors duration-500 ${isDarkMode ? 'bg-[#1A1A1A]/90 border-white/10' : 'bg-white/85 border-gray-100'}`}>
+          
           <div className="flex gap-1 overflow-x-auto no-scrollbar w-full lg:w-auto px-2 py-1" role="group" aria-label="Filter by Category">
-            {["All", "Wearables", "Audio", "Mobile", "Vision", "Work"].map(c => (
+            {["All", "Wearables", "Audio", "Mobile", "Vision", "Power"].map(c => (
               <button 
                 key={c} 
                 aria-pressed={activeCategory === c}
                 onClick={() => handleCategorySelect(c)} 
-                className={`whitespace-nowrap px-5 py-2 md:px-7 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase transition-all ${activeCategory === c ? 'bg-[#1A1A1A] text-white shadow-md scale-105' : 'text-gray-600 hover:text-black'}`}
+                className={`whitespace-nowrap px-4 py-2 md:px-7 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase transition-all ${
+                  activeCategory === c 
+                    ? 'bg-[#D4AF37] text-black shadow-md scale-105 font-black' 
+                    : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'
+                }`}
               >
                 {c}
               </button>
             ))}
           </div>
           
-          <div className={`flex-1 w-full flex items-center px-4 lg:px-8 lg:border-l border-gray-100 rounded-full transition-all ${searchQuery ? 'bg-gray-50 ring-1 ring-black/5 py-1' : ''}`}>
+          <div className={`flex-1 w-full flex items-center px-4 lg:px-8 rounded-full transition-all border py-1 ${isDarkMode ? 'bg-black/50 border-white/10' : 'bg-gray-50 border-gray-100'}`}>
              <span className="mr-3 opacity-30 text-xs" aria-hidden="true">🔍</span>
              <label htmlFor="search-input" className="sr-only">Search Artifacts</label>
              <input 
                id="search-input"
                type="text" 
                value={searchQuery} 
-               placeholder="SEARCH ARTIFACTS..." 
-               className="bg-transparent w-full text-[9px] md:text-[10px] font-black tracking-widest outline-none uppercase text-black placeholder:text-gray-500" 
+               placeholder="SEARCH INVENTORY (e.g., headphone)..." 
+               className={`bg-transparent w-full text-[9px] md:text-[10px] font-black tracking-widest outline-none uppercase py-1 ${isDarkMode ? 'text-white placeholder:text-gray-600' : 'text-black placeholder:text-gray-500'}`} 
                onChange={(e) => setSearchQuery(e.target.value)} 
              />
              {searchQuery && (
-               <button 
-                 onClick={() => setSearchQuery("")} 
-                 aria-label="Clear search query"
-                 className="text-[10px] font-bold text-gray-500 hover:text-black px-2"
-               >
-                 ✕
-               </button>
+               <button onClick={() => setSearchQuery("")} aria-label="Clear search query" className="text-[10px] font-bold text-gray-500 hover:text-[#D4AF37] px-2">✕</button>
              )}
           </div>
 
-          <div className="hidden lg:flex items-center gap-6 pr-6">
-             <Link to="/cart" aria-label={`View Cart with ${cart?.length || 0} items`} className="text-[10px] font-black tracking-widest uppercase flex items-center gap-2 text-black hover:text-[#D4AF37] transition-colors">
-               BAG <span className="bg-[#D4AF37] text-black w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black shadow-sm">{cart?.length || 0}</span>
-             </Link>
+          <div className={`w-full lg:w-auto flex items-center justify-between lg:justify-end gap-3 px-2 lg:border-l pl-4 ${isDarkMode ? 'border-white/10' : 'border-gray-100'}`}>
+             <label htmlFor="sort-dropdown" className="text-[8px] font-black tracking-widest text-gray-500 uppercase hidden sm:inline">Sort:</label>
+             <select 
+               id="sort-dropdown"
+               value={sortBy} 
+               onChange={(e) => setSortBy(e.target.value)}
+               className={`bg-transparent text-[9px] font-black tracking-widest uppercase outline-none cursor-pointer py-2 pr-4 border-none ${isDarkMode ? 'text-white' : 'text-black'}`}
+             >
+                <option value="default" className="text-black">Standard Order</option>
+                <option value="price-asc" className="text-black">Price: Low to High</option>
+                <option value="price-desc" className="text-black">Price: High to Low</option>
+             </select>
           </div>
+
         </div>
       </nav>
 
-      {/* 5. PRODUCT CATALOGUE */}
-      <section ref={catalogueRef} className="max-w-7xl mx-auto px-6 py-16 md:py-32 scroll-mt-32" aria-labelledby="catalog-title">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 md:mb-20 gap-6 px-2 border-b border-gray-100 pb-8">
-          <div className="space-y-2 text-left">
-             <p className="text-[9px] md:text-[10px] font-black text-[#D4AF37] tracking-[0.5em] uppercase italic">System Inventory</p>
-             <h2 id="catalog-title" className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase italic text-black">Featured Artifacts</h2>
+      {/* PRODUCT CATALOGUE */}
+      <section ref={catalogueRef} className="max-w-7xl mx-auto px-4 md:px-6 py-16 md:py-32 scroll-mt-32" aria-labelledby="catalog-title">
+        <div className={`flex flex-col md:flex-row justify-between items-start md:items-end mb-12 md:mb-20 gap-4 px-2 border-b pb-6 ${isDarkMode ? 'border-white/10' : 'border-gray-100'}`}>
+          <div className="space-y-1 md:space-y-2 text-left">
+             <p className="text-[8px] md:text-[10px] font-black text-[#D4AF37] tracking-[0.5em] uppercase italic">System Inventory</p>
+             <h2 id="catalog-title" className={`text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase italic ${isDarkMode ? 'text-white' : 'text-black'}`}>Featured Artifacts</h2>
           </div>
-          <p className="text-gray-500 font-bold max-w-xs text-left md:text-right text-[10px] md:text-xs uppercase tracking-widest leading-relaxed">
-            {activeCategory === "All" ? "Displaying Complete Catalogue" : `Filtered by: ${activeCategory}`} ({filtered.length} items)
-          </p>
+          <div className="text-left md:text-right space-y-1">
+             <p className="text-gray-500 font-bold text-[9px] md:text-xs uppercase tracking-widest leading-relaxed">
+               {activeCategory === "All" ? "Displaying Base Core Setups" : `Filtered by: ${activeCategory}`} ({processedProducts.length} items)
+             </p>
+             <Link to="/products" onClick={playPremiumBeep} className="text-[#D4AF37] font-black text-[9px] uppercase tracking-widest block hover:underline">
+               Explore complete archive collection ↗
+             </Link>
+          </div>
         </div>
 
-        {filtered.length === 0 ? (
-          <div className="py-20 text-center space-y-4">
+        {processedProducts.length === 0 ? (
+          <div className={`py-20 text-center space-y-4 rounded-[30px] border ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-white border-gray-100'}`}>
             <p className="text-gray-500 text-xs font-black tracking-widest uppercase" role="status">No artifacts match your parameters.</p>
-            <button onClick={() => { setSearchQuery(""); setActiveCategory("All"); }} className="bg-black text-white px-6 py-3 rounded-full text-[9px] font-black uppercase tracking-widest">Reset Filters</button>
+            <button onClick={() => { setSearchQuery(""); setActiveCategory("All"); setSortBy("default"); }} className="bg-[#D4AF37] text-black px-6 py-3 rounded-full text-[9px] font-black uppercase tracking-widest font-black">Reset Scope</button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-16 lg:gap-20">
-            {filtered.map(p => (
-              <div key={p.id} className="group relative flex flex-col">
-                <div className="relative aspect-[4/5] w-full bg-white rounded-[40px] md:rounded-[50px] overflow-hidden shadow-sm border border-gray-50 transition-all duration-500 hover:shadow-[0_20px_60px_rgba(0,0,0,0.06)] hover:-translate-y-2 flex flex-col justify-between">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-10 md:gap-16 lg:gap-20">
+            {processedProducts.map(p => {
+              const currentQtyCount = quantities[p.id] || 1;
+
+              return (
+                <div key={p.id} className="group relative flex flex-col animate-slideUp">
                   
-                  <div className="absolute top-6 right-6 md:top-8 md:right-8 z-20 flex items-center gap-2">
-                      <span className="bg-[#1A1A1A] text-[#D4AF37] px-4 py-2 rounded-full text-[7px] md:text-[8px] font-black tracking-widest uppercase shadow-md">{p.tag}</span>
+                  <div className={`relative aspect-[4/5] w-full rounded-[25px] sm:rounded-[40px] md:rounded-[50px] overflow-hidden shadow-sm border transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col justify-between ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-white border-gray-50'}`}>
+                    
+                    <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-20 flex items-center gap-2">
+                        <span className="bg-black text-[#D4AF37] px-2.5 py-1 sm:px-4 sm:py-2 rounded-full text-[6px] sm:text-[7px] md:text-[8px] font-black tracking-widest uppercase shadow-md">{p.tag}</span>
+                    </div>
+
+                    <Link to={`/product/${p.id}`} className="w-full h-full p-4 sm:p-12 md:p-16 flex items-center justify-center my-auto" aria-label={`View details for ${p.name}`}>
+                      <img src={p.img} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-700 ease-out p-2 sm:p-4" alt="" />
+                    </Link>
+                    
+                    <div className="absolute inset-x-2 bottom-2 sm:inset-x-5 sm:bottom-5 z-20 space-y-2">
+                       
+                       <div className="flex items-center justify-between bg-black/40 backdrop-blur-md px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/10 mx-auto w-fit gap-2 sm:gap-4">
+                         <button 
+                           type="button" 
+                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleQuantityChange(p.id, -1); }} 
+                           className="text-white hover:text-[#D4AF37] font-black text-xs px-1.5 cursor-pointer"
+                         >
+                           －
+                         </button>
+                         <span className="text-[9px] sm:text-xs font-black text-[#D4AF37]">{currentQtyCount}</span>
+                         <button 
+                           type="button" 
+                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleQuantityChange(p.id, 1); }} 
+                           className="text-white hover:text-[#D4AF37] font-black text-xs px-1.5 cursor-pointer"
+                         >
+                           ＋
+                         </button>
+                       </div>
+
+                       <button 
+                        onClick={(e) => handleAddToCart(e, p)} 
+                        disabled={addedStatus[p.id]} 
+                        aria-label={`Add ${currentQtyCount} units of ${p.name} to bag`}
+                        className={`w-full py-2 sm:py-3 rounded-full text-[7px] sm:text-[9px] font-black tracking-widest uppercase transition-all duration-300 shadow-lg cursor-pointer ${
+                          addedStatus[p.id] 
+                            ? 'bg-green-500 text-white scale-100 font-black' 
+                            : 'bg-[#D4AF37] text-black hover:bg-white active:scale-95 font-black'
+                        }`}
+                       >
+                        {addedStatus[p.id] ? `✓ Added (x${currentQtyCount})` : `Add To Bag +`}
+                       </button>
+
+                    </div>
+
                   </div>
 
-                  <Link to={`/product/${p.id}`} className="w-full h-full p-12 md:p-16 flex items-center justify-center my-auto" aria-label={`View details for ${p.name}`}>
-                    <img src={p.img} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-700 ease-out p-4" alt="" />
-                  </Link>
-                  
-                  <div className="absolute inset-x-5 bottom-5 z-20">
-                     <button 
-                      onClick={(e) => handleAddToCart(e, p)} 
-                      disabled={addedStatus[p.id]} 
-                      aria-label={`Add ${p.name} to bag`}
-                      className={`w-full py-4 rounded-full text-[9px] font-black tracking-widest uppercase transition-all duration-300 shadow-lg ${
-                        addedStatus[p.id] 
-                          ? 'bg-green-500 text-white scale-100' 
-                          : 'bg-[#1A1A1A] text-white hover:bg-[#D4AF37] hover:text-black active:scale-95'
-                      }`}
-                     >
-                      {addedStatus[p.id] ? '✓ Added To Bag' : 'Add To Bag +'}
-                     </button>
+                  <div className="mt-3 sm:mt-6 px-1 text-left space-y-0.5 sm:space-y-2">
+                     <p className="text-[6px] sm:text-[8px] font-black text-gray-500 tracking-[0.2em] sm:tracking-[0.3em] uppercase truncate">{p.spec}</p>
+                     <h3 className={`text-xs sm:text-xl md:text-2xl font-black tracking-tighter uppercase truncate ${isDarkMode ? 'text-white' : 'text-black'}`}>{p.name}</h3>
+                     <p className="text-xs sm:text-lg md:text-xl font-black text-[#D4AF37]">₹{(p.price * currentQtyCount).toLocaleString('en-IN')}</p>
                   </div>
 
                 </div>
-
-                <div className="mt-6 px-2 text-left space-y-1 md:space-y-2">
-                   <p className="text-[8px] font-black text-gray-500 tracking-[0.3em] uppercase">{p.spec}</p>
-                   <h3 className="text-xl md:text-2xl font-black tracking-tighter uppercase truncate text-black">{p.name}</h3>
-                   <p className="text-lg md:text-xl font-black text-[#D4AF37]">₹{p.price.toLocaleString('en-IN')}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
 
-      {/* 6. HERITAGE / STATS */}
-      <section className="mx-4 md:mx-6 py-20 md:py-32 bg-[#1A1A1A] rounded-[30px] md:rounded-[60px] text-[#F9F6F0] overflow-hidden shadow-2xl" aria-labelledby="infrastructure-title">
+      {/* HERITAGE / STATS */}
+      <section className="mx-4 md:mx-6 py-20 md:py-32 bg-[#1A1A1A] rounded-[30px] md:rounded-[60px] text-[#F9F6F0] overflow-hidden shadow-2xl border border-white/5" aria-labelledby="infrastructure-title">
          <div className="max-w-7xl mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
             <div className="space-y-8 md:space-y-10 text-left">
                <span className="text-[#D4AF37] text-[9px] font-black tracking-[0.6em] uppercase italic">Terabyte Systems</span>
-               <h2 id="infrastructure-title" className="text-4xl md:text-6xl font-black tracking-tighter leading-tight italic uppercase">Engineered for <br className="hidden md:block"/> Supremacy.</h2>
-               <p className="text-gray-300 text-xs md:text-base leading-relaxed max-w-md font-medium">Precision industrial manufacturing aligned with lossless processing architectures. Every product delivers uncompromised standard.</p>
+               <h2 id="infrastructure-title" className="text-4xl md:text-6xl font-black tracking-tighter leading-tight italic uppercase text-white">Engineered for <br className="hidden md:block"/> Supremacy.</h2>
+               <p className="text-gray-400 text-xs md:text-base leading-relaxed max-w-md font-medium">Precision industrial manufacturing aligned with lossless processing architectures. Every product delivers uncompromised standard.</p>
                <div className="pt-2">
-                  <button className="border-b-2 border-[#D4AF37] text-[#D4AF37] pb-1 text-[9px] font-black tracking-widest uppercase hover:text-white transition-all">Explore Infrastructure</button>
+                  <button onClick={() => { playPremiumBeep(); navigate('/contact'); }} className="border-b-2 border-[#D4AF37] text-[#D4AF37] pb-1 text-[9px] font-black tracking-widest uppercase hover:text-white transition-all cursor-pointer font-black">
+                    Explore Infrastructure →
+                  </button>
                </div>
             </div>
             <div className="grid grid-cols-2 gap-4 md:gap-6">
-               {[{t:"50k+", l:"Active Nodes"}, {t:"99.9%", l:"Precision"}, {t:"M17", l:"Architecture"}, {t:"2026", l:"Deployment"}].map((s,i)=>(
-                 <div key={i} className={`aspect-square rounded-2xl md:rounded-3xl flex flex-col items-center justify-center p-4 text-center transition-transform hover:scale-105 ${i===3 ? 'bg-[#D4AF37] text-black shadow-xl' : 'bg-white/5 border border-white/5 backdrop-blur-sm'}`}>
+               {[{t:"HQ", l:"Bangalore Base"}, {t:"99%", l:"Precision"}, {t:"Labs", l:"OMR Tech Park"}, {t:"2026", l:"Deployment"}].map((s,i)=>(
+                 <div key={i} className={`aspect-square rounded-2xl md:rounded-3xl flex flex-col items-center justify-center p-4 text-center transition-transform hover:scale-105 ${i===3 ? 'bg-[#D4AF37] text-black shadow-xl font-black' : 'bg-white/5 border border-white/5 backdrop-blur-sm'}`}>
                    <p className="text-2xl md:text-4xl font-black italic">{s.t}</p>
                    <p className="text-[7px] md:text-[8px] font-black tracking-[0.2em] uppercase opacity-80 mt-1">{s.l}</p>
                  </div>
@@ -282,11 +412,11 @@ const Home = () => {
          </div>
       </section>
 
-      {/* 7. PERFORMANCE BAR SHOWCASE */}
-      <section className="py-20 md:py-32 bg-white" aria-labelledby="metrics-title">
+      {/* PERFORMANCE BAR SHOWCASE */}
+      <section className={`py-20 md:py-32 transition-colors duration-500 ${isDarkMode ? 'bg-[#121212]' : 'bg-white'}`} aria-labelledby="metrics-title">
         <div className="max-w-7xl mx-auto px-6 md:px-10">
            <div className="text-center mb-16 md:mb-24">
-              <h2 id="metrics-title" className="text-3xl md:text-5xl font-black tracking-tighter uppercase italic mb-2 text-black">Operational Metrics</h2>
+              <h2 id="metrics-title" className={`text-3xl md:text-5xl font-black tracking-tighter uppercase italic mb-2 ${isDarkMode ? 'text-white' : 'text-black'}`}>Operational Metrics</h2>
               <p className="text-[#D4AF37] text-[8px] tracking-[0.4em] uppercase font-black">Industrial Load Output</p>
            </div>
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -294,43 +424,47 @@ const Home = () => {
                   {[{ t: "Spatial Logic", p: "98%" }, { t: "Acoustic Fidelity", p: "96%" }, { t: "Silicon Speed", p: "100%" }].map((spec, i) => (
                     <div key={i} className="group">
                        <div className="flex justify-between items-end mb-2">
-                          <h3 className="text-sm md:text-base font-black uppercase tracking-tight text-black">{spec.t}</h3>
+                          <h3 className={`text-sm md:text-base font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-black'}`}>{spec.t}</h3>
                           <span className="text-[#D4AF37] font-black text-xs tracking-widest">{spec.p}</span>
                        </div>
-                       <div className="h-[3px] w-full bg-gray-100 overflow-hidden rounded-full border border-gray-200">
-                          <div className="h-full bg-[#1A1A1A] group-hover:bg-[#D4AF37] transition-all duration-1000 ease-out rounded-full" style={{ width: spec.p }}></div>
+                       <div className={`h-[3px] w-full overflow-hidden rounded-full border ${isDarkMode ? 'bg-white/10 border-white/5' : 'bg-gray-100 border-gray-200'}`}>
+                          <div className="h-full bg-[#D4AF37] transition-all duration-1000 ease-out rounded-full" style={{ width: spec.p }}></div>
                        </div>
                     </div>
                   ))}
               </div>
-              <div className="rounded-[30px] md:rounded-[50px] overflow-hidden shadow-xl h-[280px] md:h-[400px] order-1 lg:order-2 bg-[#F9F6F0]">
-                  <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000" className="w-full h-full object-cover grayscale contrast-125 brightness-90 mix-blend-multiply p-2" alt="Infrastructure performance telemetry graphic" />
+              <div className={`rounded-[30px] md:rounded-[50px] overflow-hidden shadow-xl h-[280px] md:h-[400px] order-1 lg:order-2 border ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-[#F9F6F0] border-none'}`}>
+                  <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=60&w=1000" className="w-full h-full object-cover grayscale contrast-125 brightness-90 mix-blend-multiply p-2" alt="Infrastructure performance telemetry graphic" />
               </div>
            </div>
         </div>
       </section>
 
-      {/* 8. NEWSLETTER */}
-      <section className="py-20 md:py-32 bg-[#F9F6F0] relative overflow-hidden px-6 border-t border-b border-gray-100" aria-labelledby="newsletter-title">
+      {/* NEWSLETTER */}
+      <section className={`py-20 md:py-32 relative overflow-hidden px-6 border-t border-b transition-colors duration-500 ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-[#F9F6F0] border-gray-100'}`} aria-labelledby="newsletter-title">
          <div className="max-w-3xl mx-auto text-center space-y-8 relative z-10">
             <div className="w-12 h-[3px] bg-[#D4AF37] mx-auto"></div>
-            <h2 id="newsletter-title" className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase italic leading-none text-black">Initialize Access.</h2>
-            <p className="text-gray-600 text-xs md:text-sm font-bold tracking-widest max-w-lg mx-auto uppercase">Secure privileged bandwidth for tier-1 prototype dispatches.</p>
-            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col sm:flex-row gap-3 justify-center pt-4 w-full max-w-md mx-auto">
-               <label htmlFor="comm-id-input" className="sr-only">Communication Email ID</label>
+            <h2 id="newsletter-title" className={`text-3xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase italic leading-none ${isDarkMode ? 'text-white' : 'text-black'}`}>Partner with Terabyte.</h2>
+            <p className="text-gray-500 text-xs md:text-sm font-bold tracking-widest max-w-lg mx-auto uppercase leading-relaxed">
+              Join our elite network for priority prototype dispatches and early access to our custom builds.
+            </p>
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 justify-center pt-4 w-full max-w-md mx-auto">
+               <label htmlFor="startup-email-input" className="sr-only">Your Secure Email Address</label>
                <input 
-                 id="comm-id-input"
+                 id="startup-email-input"
                  type="email" 
+                 value={newsletterEmail}
+                 onChange={(e) => setNewsletterEmail(e.target.value)}
                  required
-                 placeholder="COMMUNICATION ID" 
-                 className="bg-white border border-gray-200 px-6 py-4 rounded-full text-[9px] font-black tracking-widest outline-none focus:border-[#D4AF37] flex-1 text-black placeholder:text-gray-400 shadow-sm uppercase" 
+                 placeholder="NAME@STARTUP.IN" 
+                 className={`border px-6 py-4 rounded-full text-[9px] font-black tracking-widest outline-none focus:border-[#D4AF37] flex-1 shadow-sm uppercase ${isDarkMode ? 'bg-black text-white border-white/10 placeholder:text-gray-600' : 'bg-white text-black border-gray-200 placeholder:text-gray-400'}`} 
                />
                <button 
                  type="submit"
-                 aria-label="Transmit communication identifier"
-                 className="bg-[#1A1A1A] text-white px-8 py-4 rounded-full text-[9px] font-black tracking-[0.3em] uppercase hover:bg-[#D4AF37] hover:text-black transition-all shadow-md"
+                 aria-label="Join early access newsletter"
+                 className="bg-[#D4AF37] text-black px-8 py-4 rounded-full text-[9px] font-black tracking-[0.3em] uppercase hover:bg-white transition-all shadow-md active:scale-95 cursor-pointer font-black"
                >
-                 Transmit
+                 Join Link
                </button>
             </form>
          </div>
