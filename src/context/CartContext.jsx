@@ -3,9 +3,17 @@ import { createContext, useState, useContext, useEffect } from 'react';
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
-  
-  // --- 1. GLOBAL THEME ENGINE (Controlled from Navbar to sync entire website) ---
+  // --- 1. PERSISTENT CART ENGINE ---
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem("terabyte_cart");
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("terabyte_cart", JSON.stringify(cart));
+  }, [cart]);
+
+  // --- 2. GLOBAL THEME ENGINE ---
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem("terabyte_theme") === "dark";
   });
@@ -18,7 +26,6 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  // Sync entire DOM elements instantaneously
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -29,28 +36,38 @@ export const CartProvider = ({ children }) => {
     }
   }, [isDarkMode]);
 
-  // --- 2. AUTH STATES (Updated Default Identity to Arul) ---
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null); 
+  // --- 3. PERSISTENT AUTH ENGINE (No More Default Identity) ---
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("terabyte_user");
+    // Memory-la enna data irukko adhai thaan refresh-kku appram load pannum
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem("terabyte_user") ? true : false;
+  });
 
   // Auth Functions
   const login = (userData) => {
-    setIsLoggedIn(true);
-    setUser(userData || { name: 'Arul' }); // Set default authorized architect identity
+    if (userData) {
+      // Backend-la irundhu vara real data-vai (e.g. Praveen) memory-la lock panroam
+      localStorage.setItem("terabyte_user", JSON.stringify(userData));
+      setUser(userData);
+      setIsLoggedIn(true);
+    }
   };
 
   const logout = () => {
+    localStorage.removeItem("terabyte_user");
     setIsLoggedIn(false);
     setUser(null);
   };
 
-  // --- 3. SKUs QUANTITY PUSH LOGIC (STRICT AGGREGATION) ---
+  // --- 4. CART LOGIC ---
   const addToCart = (product) => {
     setCart((prev) => {
       const isItemInCart = prev.find((item) => item.id === product.id);
-      // Capture customized incoming unit payload or default strictly to 1
       const incomingQty = product.quantity || 1;
-
       if (isItemInCart) {
         return prev.map((item) =>
           item.id === product.id 
@@ -74,7 +91,10 @@ export const CartProvider = ({ children }) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    localStorage.removeItem("terabyte_cart");
+  };
 
   const cartTotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
 
@@ -87,12 +107,10 @@ export const CartProvider = ({ children }) => {
         removeFromCart, 
         clearCart, 
         cartTotal,
-        // Auth exports
         isLoggedIn,
         user,
         login,
         logout,
-        // Universal Theme exports
         isDarkMode,
         toggleTheme
       }}

@@ -1,285 +1,159 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { Link } from 'react-router-dom';
-
-// --- DATA LAYER (Optimized with automated modern WebP compression for max Performance) ---
-export const products = [
-  { id: 1, name: "Terabyte Watch Ultra", price: 65999, category: "Wearables", img: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&q=60&w=500", tag: "Limited", spec: "Grade-5 Titanium Build" },
-  { id: 2, name: "Terabyte Studio Pro", price: 28900, category: "Audio", img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=60&w=1000", tag: "Best Seller", spec: "Lossless Audio 2.0" },
-  { id: 3, name: "Terabyte Phone 15 Pro", price: 144900, category: "Mobile", img: "https://images.unsplash.com/photo-1616348436168-de43ad0db179?auto=format&fit=crop&q=60&w=1000", tag: "New", spec: "A17 Pro Silicon" },
-  { id: 4, name: "Terabyte Vision Glass", price: 299000, category: "Vision", img: "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?auto=format&fit=crop&q=60&w=1000", tag: "Elite", spec: "Spatial Computing Ready" },
-  { id: 5, name: "Terabyte Aero Pods", price: 49900, category: "Audio", img: "https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?auto=format&fit=crop&q=60&w=1000", tag: "Trending", spec: "Active Noise Cancellation" },
-  { id: 6, name: "Terabyte MagSafe Hub", price: 14900, category: "Power", img: "https://images.unsplash.com/photo-1615526675159-e248c3021d3f?auto=format&fit=crop&q=60&w=1000", tag: "Essential", spec: "15W Fast Wireless" },
-  { id: 7, name: "Terabyte Keyboard Pro", price: 12900, category: "Work", img: "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&q=60&w=1000", tag: "Mechanical", spec: "Silver Switches" },
-  { id: 8, name: "Terabyte Mouse Pad", price: 4500, category: "Work", img: "https://images.unsplash.com/photo-1629429408209-1f912961dbd8?auto=format&fit=crop&q=60&w=1000", tag: "Minimal", spec: "Waterproof Micro-texture" },
-  { id: 9, name: "Terabyte Laptop Stand", price: 8900, category: "Work", img: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=60&w=1000", tag: "Ergonomic", spec: "Brushed Aluminum" }
-];
+import axios from 'axios';
 
 const ProductListing = () => {
-  // GLOBALIZED PULL: Fetching shared theme logic direct from central engine
-  const { addToCart, cart, isDarkMode } = useCart();
+  const { addToCart, isDarkMode } = useCart();
+  
+  // --- DYNAMIC STATE ---
+  const [dbProducts, setDbProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("default");
-  
   const [showPopup, setShowPopup] = useState(false);
   const [lastAdded, setLastAdded] = useState("");
   const [addedStatus, setAddedStatus] = useState({});
 
-  // Track global menu overlapping state cross-tree
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  // Sync scroll positioning and cross-tree menu overlays
+  // --- FETCH FROM DATABASE ---
   useEffect(() => {
     window.scrollTo(0, 0);
-
-    // Listen to native event emitted when mobile menu is toggled in Navbar
-    const handleMenuState = (e) => {
-      if (e.detail !== undefined) {
-        setIsMenuOpen(e.detail.isOpen);
+    const fetchInventory = async () => {
+      try {
+        setLoading(true);
+        // Backend API path check
+        const res = await axios.get('http://localhost:5000/api/products');
+        
+        if (res.data.success) {
+          // console.log("Vault Items Received:", res.data.data); // Debugging-kaga
+          setDbProducts(res.data.data);
+        }
+      } catch (err) {
+        console.error("Vault sync failed:", err);
+      } finally {
+        setLoading(false);
       }
     };
-
-    window.addEventListener("terabyte_nav_toggle", handleMenuState);
-    return () => {
-      window.removeEventListener("terabyte_nav_toggle", handleMenuState);
-    };
+    fetchInventory();
   }, []);
-
-  const playPremiumBeep = () => {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.3);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.3);
-    } catch (err) {}
-  };
 
   const handleAddToCart = (e, product) => {
     e.preventDefault();
-    e.stopPropagation();
-    playPremiumBeep();
+    e.stopPropagation(); 
     
-    // Explicit single default base multiplier payload directly dispatched
     addToCart({ ...product, quantity: 1 });
-    
     setLastAdded(product.name);
     setShowPopup(true);
-    setAddedStatus(prev => ({ ...prev, [product.id]: true }));
-    setTimeout(() => {
-      setAddedStatus(prev => ({ ...prev, [product.id]: false }));
-    }, 2500);
+    
+    setAddedStatus(prev => ({ ...prev, [product._id]: true }));
+    setTimeout(() => setAddedStatus(prev => ({ ...prev, [product._id]: false })), 2500);
     setTimeout(() => setShowPopup(false), 3500);
   };
 
-  // OMITTING "Work" items completely from the UI output array stream
-  const listingDisplayProducts = products.filter(p => p.category !== "Work");
-
-  let processedProducts = listingDisplayProducts.filter(p => 
+  // Filter logic (Excluding 'Work' category products)
+  const filtered = dbProducts.filter(p => p.category !== "Work");
+  
+  let processedProducts = filtered.filter(p => 
     (activeCategory === "All" || p.category === activeCategory) && 
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (sortBy === "price-asc") {
-    processedProducts.sort((a, b) => a.price - b.price);
-  } else if (sortBy === "price-desc") {
-    processedProducts.sort((a, b) => b.price - a.price);
-  }
+  if (sortBy === "price-asc") processedProducts.sort((a, b) => a.price - b.price);
+  if (sortBy === "price-desc") processedProducts.sort((a, b) => b.price - a.price);
+
+  if (loading) return (
+    <div className={`h-screen flex items-center justify-center font-black uppercase tracking-widest ${isDarkMode ? 'bg-[#121212] text-white' : 'bg-[#F9F6F0] text-black'}`}>
+      <p className="animate-pulse italic text-sm">Synchronizing Vault Inventory...</p>
+    </div>
+  );
 
   return (
     <div className={`min-h-screen font-sans antialiased selection:bg-[#D4AF37] selection:text-white pb-32 transition-colors duration-500 ${isDarkMode ? 'bg-[#121212] text-[#F9F6F0]' : 'bg-[#F9F6F0] text-[#1A1A1A]'}`}>
       
-      {/* --- RESPONSIVE TOAST NOTIFICATION --- */}
+      {/* Toast Notification */}
       {showPopup && (
-        <div 
-          role="alert"
-          className="fixed bottom-6 md:bottom-10 left-4 right-4 md:left-auto md:right-10 z-[5000] 
-                     bg-[#1A1A1A] text-[#F9F6F0] p-4 md:p-5 rounded-[20px] md:rounded-[25px] 
-                     shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex items-center justify-between gap-6 
-                     border border-white/10 transition-all duration-300 animate-slideUp"
-        >
-          <div className="flex items-center gap-3 overflow-hidden">
-             <div className="w-8 h-8 md:w-10 md:h-10 bg-[#D4AF37] rounded-full flex-shrink-0 flex items-center justify-center font-black text-black text-xs md:text-base">✓</div>
-             <div className="overflow-hidden">
-                <p className="text-[7px] md:text-[8px] font-black tracking-[0.3em] text-[#D4AF37] uppercase">Artifact Secured</p>
-                <p className="text-xs md:text-sm font-black uppercase tracking-tight truncate max-w-[140px] md:max-w-[220px]">{lastAdded}</p>
+        <div className="fixed bottom-6 md:bottom-10 right-4 md:right-10 z-[5000] bg-[#1A1A1A] text-[#F9F6F0] p-5 rounded-[25px] shadow-2xl flex items-center gap-6 border border-white/10 animate-slideUp">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center font-black text-black">✓</div>
+             <div>
+                <p className="text-[8px] font-black tracking-widest text-[#D4AF37] uppercase">Artifact Secured</p>
+                <p className="text-sm font-black uppercase truncate max-w-[200px]">{lastAdded}</p>
              </div>
           </div>
-          <Link to="/cart" className="bg-white text-black px-5 py-2.5 rounded-full text-[9px] font-black tracking-widest uppercase hover:bg-[#D4AF37] transition-all whitespace-nowrap shadow-sm font-black">
-            View Bag →
-          </Link>
+          <Link to="/cart" className="bg-white text-black px-5 py-2 rounded-full text-[9px] font-black uppercase shadow-sm">View Bag →</Link>
         </div>
       )}
 
-      {/* --- CINEMATIC HEADER SECTION --- */}
-      <header className="bg-[#1A1A1A] text-[#F9F6F0] pt-24 md:pt-36 pb-16 md:pb-24 px-6 border-b border-white/10 relative overflow-hidden rounded-b-[40px] md:rounded-b-[60px] shadow-2xl">
-        <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-          <div className="space-y-3 max-w-xl text-left">
-            <p className="text-[#D4AF37] text-[9px] md:text-[10px] font-black tracking-[0.6em] uppercase italic">Lossless Architecture</p>
-            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter uppercase italic leading-none">
-              Catalogue<span className="text-[#D4AF37] not-italic">.</span>
-            </h1>
-            <p className="text-gray-300 text-xs md:text-sm font-medium tracking-wide leading-relaxed pt-2">
-              Browse tier-1 precision electronics. Filtered through aerospace industrial standards.
-            </p>
+      {/* Cinematic Header */}
+      <header className="bg-[#1A1A1A] text-[#F9F6F0] pt-24 md:pt-36 pb-16 px-6 rounded-b-[40px] md:rounded-b-[60px] shadow-2xl relative">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-8">
+          <div className="text-left">
+            <p className="text-[#D4AF37] text-[10px] font-black tracking-[0.6em] uppercase italic">Lossless Architecture</p>
+            <h1 className="text-5xl md:text-8xl font-black tracking-tighter uppercase italic">Catalogue<span className="text-[#D4AF37] not-italic">.</span></h1>
           </div>
-
-          <div className="flex gap-6 border-t border-white/10 md:border-t-0 pt-6 md:pt-0 w-full md:w-auto justify-start md:justify-end">
-            <div className="border-l border-white/10 pl-4 text-left">
-               <p className="text-[8px] font-black tracking-[0.3em] uppercase text-[#D4AF37]">Inventory Status</p>
-               <p className="text-xl font-black uppercase tracking-tight">{listingDisplayProducts.length} Nodes</p>
-            </div>
-            <div className="border-l border-white/10 pl-4 text-left">
-               <p className="text-[8px] font-black tracking-[0.3em] uppercase text-[#D4AF37]">Security</p>
-               <p className="text-xl font-black uppercase tracking-tight">Zero-Trust</p>
-            </div>
+          <div className="border-l border-white/10 pl-6 text-left">
+             <p className="text-[8px] font-black tracking-widest uppercase text-[#D4AF37]">Total Nodes</p>
+             <p className="text-4xl font-black uppercase">{processedProducts.length}</p>
           </div>
         </div>
-        <div className="absolute top-0 right-10 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-[#D4AF37]/5 blur-[120px] rounded-full pointer-events-none"></div>
       </header>
 
-      {/* --- ADVANCED STICKY SEARCH & CONTROL DASHBOARD (STRIPPED WORK CATEGORY + OVERLAP FIX) --- */}
-      <section className={`sticky top-4 z-[2000] max-w-7xl mx-auto px-4 md:px-6 my-8 transition-all duration-500 ${
-        isMenuOpen ? 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto' : 'opacity-100 pointer-events-auto'
-      }`} aria-label="Catalog Filtering Controls">
-        <div className={`backdrop-blur-2xl border rounded-[25px] md:rounded-[40px] shadow-lg p-3 md:p-4 flex flex-col lg:flex-row justify-between items-center gap-4 transition-colors duration-500 ${isDarkMode ? 'bg-[#1A1A1A]/90 border-white/10' : 'bg-white/85 border-gray-100'}`}>
-          
-          <div className="flex gap-1 overflow-x-auto no-scrollbar w-full lg:w-auto px-2 py-1" role="group" aria-label="Filter by Product Category">
-            {/* OMITTED "Work" strictly from the rendering tabs mapping */}
+      {/* Search & Tabs */}
+      <section className="max-w-7xl mx-auto px-6 my-8">
+        <div className={`p-4 rounded-[40px] flex flex-col lg:flex-row gap-4 items-center ${isDarkMode ? 'bg-[#1A1A1A] border border-white/10' : 'bg-white border border-gray-100 shadow-sm'}`}>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {["All", "Wearables", "Audio", "Mobile", "Vision", "Power"].map(c => (
-              <button 
-                key={c} 
-                aria-pressed={activeCategory === c}
-                onClick={() => setActiveCategory(c)} 
-                className={`whitespace-nowrap px-5 py-2.5 md:px-7 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase transition-all ${
-                  activeCategory === c 
-                    ? 'bg-[#D4AF37] text-black shadow-md scale-105 font-black' 
-                    : isDarkMode ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-black hover:bg-gray-50'
-                }`}
-              >
+              <button key={c} onClick={() => setActiveCategory(c)} className={`px-6 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${activeCategory === c ? 'bg-[#D4AF37] text-black shadow-lg' : 'text-gray-500 hover:text-black'}`}>
                 {c}
               </button>
             ))}
           </div>
-
-          <div className={`flex-1 w-full flex items-center px-4 lg:px-6 rounded-full border py-1 transition-all ${isDarkMode ? 'bg-black/50 border-white/10 focus-within:border-[#D4AF37]' : 'bg-gray-50/50 border-gray-100 focus-within:border-black'}`}>
-             <span className="mr-3 opacity-30 text-xs" aria-hidden="true">🔍</span>
-             <label htmlFor="search-artifacts" className="sr-only">Search complete catalogue</label>
-             <input 
-               id="search-artifacts"
-               type="text" 
-               value={searchQuery} 
-               placeholder="SEARCH INVENTORY..." 
-               className={`bg-transparent w-full text-[9px] md:text-[10px] font-black tracking-widest outline-none uppercase py-2 ${isDarkMode ? 'text-white placeholder:text-gray-600' : 'text-black placeholder:text-gray-500'}`} 
-               onChange={(e) => setSearchQuery(e.target.value)} 
-             />
-             {searchQuery && (
-               <button onClick={() => setSearchQuery("")} aria-label="Clear active search" className="text-[10px] font-bold text-gray-500 hover:text-[#D4AF37] px-2">✕</button>
-             )}
-          </div>
-
-          <div className={`w-full lg:w-auto flex items-center justify-between lg:justify-end gap-3 px-2 lg:border-l pl-4 ${isDarkMode ? 'border-white/10' : 'border-gray-100'}`}>
-             <label htmlFor="sort-dropdown" className="text-[8px] font-black tracking-widest text-gray-500 uppercase hidden sm:inline">Sort:</label>
-             <select 
-               id="sort-dropdown"
-               value={sortBy} 
-               onChange={(e) => setSortBy(e.target.value)}
-               className={`bg-transparent text-[9px] font-black tracking-widest uppercase outline-none cursor-pointer py-2 pr-4 border-none ${isDarkMode ? 'text-white' : 'text-black'}`}
-             >
-                <option value="default" className="text-black">Standard Order</option>
-                <option value="price-asc" className="text-black">Price: Low to High</option>
-                <option value="price-desc" className="text-black">Price: High to Low</option>
-             </select>
-          </div>
-
+          <input 
+            type="text" 
+            placeholder="Search Artifacts..." 
+            className="flex-1 bg-transparent px-6 py-3 outline-none text-[10px] font-black tracking-widest uppercase"
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </section>
 
-      {/* --- INVENTORY GRID SHOWCASE --- */}
-      <main className="max-w-7xl mx-auto px-6 pt-6 md:pt-12" aria-label="Product Catalogue Grid">
-        {processedProducts.length === 0 ? (
-          <div className={`py-32 text-center space-y-6 rounded-[40px] border p-10 shadow-sm max-w-lg mx-auto mt-10 ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-white border-gray-100'}`}>
-            <div className="text-5xl grayscale opacity-20" aria-hidden="true">🎛️</div>
-            <p className="text-gray-500 text-xs font-black tracking-widest uppercase leading-relaxed" role="status">
-              Zero results matching current telemetry parameters.
-            </p>
-            <button 
-              onClick={() => { setSearchQuery(""); setActiveCategory("All"); setSortBy("default"); }} 
-              className="bg-[#D4AF37] text-black px-8 py-4 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-md font-black"
-            >
-              Reset All Telemetry
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-16 lg:gap-20">
-            {processedProducts.map(p => (
-              <div key={p.id} className="group relative flex flex-col animate-slideUp">
-                
-                <div className={`relative aspect-[4/5] w-full rounded-[40px] md:rounded-[50px] overflow-hidden shadow-sm border transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 flex flex-col justify-between ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-white border-gray-50'}`}>
-                  
-                  <div className="absolute top-6 right-6 md:top-8 md:right-8 z-20 flex items-center gap-2">
-                      <span className="bg-black text-[#D4AF37] px-4 py-2 rounded-full text-[7px] md:text-[8px] font-black tracking-widest uppercase shadow-md">{p.tag}</span>
-                  </div>
-
-                  <Link to={`/product/${p.id}`} aria-label={`View full details of ${p.name}`} className="w-full h-full p-12 md:p-16 flex items-center justify-center my-auto">
-                    <img 
-                      src={p.img} 
-                      className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-700 ease-out p-4" 
-                      alt="" 
-                    />
-                  </Link>
-                  
-                  <div className="absolute inset-x-5 bottom-5 z-20">
-                     <button 
-                      onClick={(e) => handleAddToCart(e, p)} 
-                      disabled={addedStatus[p.id]} 
-                      aria-label={`Add ${p.name} to custom order bag`}
-                      className={`w-full py-4 rounded-full text-[9px] font-black tracking-widest uppercase transition-all duration-300 shadow-lg cursor-pointer ${
-                        addedStatus[p.id] 
-                          ? 'bg-green-500 text-white scale-100 font-black' 
-                          : 'bg-[#D4AF37] text-black hover:bg-white active:scale-95 font-black'
-                      }`}
-                     >
-                      {addedStatus[p.id] ? '✓ Secured In Bag' : 'Add To Bag +'}
-                     </button>
-                  </div>
-
+      {/* Inventory Grid */}
+      <main className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 mt-12">
+        {processedProducts.length > 0 ? (
+          processedProducts.map(p => (
+            <div key={p._id} className="group flex flex-col animate-slideUp">
+              <div className={`relative aspect-[4/5] rounded-[50px] overflow-hidden flex flex-col items-center justify-center p-12 transition-all hover:-translate-y-2 hover:shadow-2xl ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-white border-gray-50'}`}>
+                <div className="absolute top-8 right-8 bg-black text-[#D4AF37] px-4 py-2 rounded-full text-[8px] font-black uppercase italic z-20">{p.tag}</div>
+                <Link to={`/product/${p._id}`} className="w-full h-full flex items-center justify-center cursor-pointer">
+                  <img src={p.img} alt={p.name} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500 p-4" />
+                </Link>
+                <div className="absolute inset-x-6 bottom-6 z-20">
+                   <button 
+                    onClick={(e) => handleAddToCart(e, p)} 
+                    disabled={addedStatus[p._id]}
+                    className={`w-full py-4 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${addedStatus[p._id] ? 'bg-green-500 text-white' : 'bg-[#D4AF37] text-black hover:bg-black hover:text-white shadow-xl'}`}
+                   >
+                     {addedStatus[p._id] ? '✓ Secured' : 'Add To Bag +'}
+                   </button>
                 </div>
-
-                <div className="mt-6 px-2 text-left space-y-1 md:space-y-2">
-                   <p className="text-[8px] font-black text-gray-500 tracking-[0.3em] uppercase">{p.spec}</p>
-                   <h2 className={`text-xl md:text-2xl font-black tracking-tighter uppercase truncate ${isDarkMode ? 'text-white' : 'text-black'}`}>{p.name}</h2>
-                   <p className="text-lg md:text-xl font-black text-[#D4AF37]">
-                     ₹{p.price.toLocaleString('en-IN')}
-                   </p>
-                </div>
-
               </div>
-            ))}
+              <div className="mt-6 text-left px-2">
+                 <p className="text-[8px] font-black text-gray-500 tracking-widest uppercase">{p.spec}</p>
+                 <Link to={`/product/${p._id}`}>
+                   <h2 className="text-2xl font-black uppercase tracking-tighter mt-1 hover:text-[#D4AF37] transition-colors cursor-pointer">{p.name}</h2>
+                 </Link>
+                 <p className="text-xl font-black text-[#D4AF37] mt-1">₹{p.price.toLocaleString('en-IN')}</p>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="col-span-full py-20 text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.5em] opacity-40 italic">No artifacts found in this sector.</p>
           </div>
         )}
       </main>
-
-      {/* --- RETAIL DISPATCH BANNER --- */}
-      <section className="max-w-7xl mx-auto px-6 mt-32" aria-labelledby="custom-build-heading">
-        <div className={`rounded-[30px] md:rounded-[50px] p-10 md:p-16 border flex flex-col sm:flex-row justify-between items-center gap-8 text-left shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-[#1A1A1A] border-white/5' : 'bg-white border-gray-100'}`}>
-           <div className="space-y-2 max-w-md">
-              <p className="text-[8px] font-black tracking-[0.4em] text-[#D4AF37] uppercase">Priority Air Dispatch</p>
-              <h2 id="custom-build-heading" className={`text-2xl md:text-3xl font-black uppercase italic tracking-tighter ${isDarkMode ? 'text-white' : 'text-black'}`}>Need custom build integrations?</h2>
-           </div>
-           <Link to="/contact" className="bg-[#D4AF37] text-black px-8 py-5 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-white transition-all whitespace-nowrap shadow-md font-black">
-              Contact Node Hub
-           </Link>
-        </div>
-      </section>
-
     </div>
   );
 };
